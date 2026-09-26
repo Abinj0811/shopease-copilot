@@ -1,2 +1,5 @@
-CLAUDE.md
-docs/
+# Secrets
+.env
+
+# Python
+.venv/
