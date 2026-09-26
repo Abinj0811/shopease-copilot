@@ -9,3 +9,6 @@ Every configurable value (ports, URLs, keys, model aliases, thresholds, counts, 
 | POSTGRES_DB | Database created on first start | shopease | .env | shopease_dev |
 | POSTGRES_PORT | Host port mapped to Postgres (bound to 127.0.0.1) | 5432 | .env | 5433 |
 | REDIS_PORT | Host port mapped to Redis (bound to 127.0.0.1) | 6379 | .env | 6380 |
+| POSTGRES_HOST | Host the app and scripts use to reach Postgres | 127.0.0.1 | .env | postgres (from inside Compose) |
+| REDIS_HOST | Host the app and scripts use to reach Redis | 127.0.0.1 | .env | redis (from inside Compose) |
+| INFRA_CHECK_TIMEOUT_SECONDS | Connect timeout in seconds for scripts/check_infra.py | 5 | .env | 15 |

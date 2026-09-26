@@ -3,7 +3,11 @@ name = "shopease-copilot"
 version = "0.1.0"
 description = "AI customer-support copilot for ShopEase, with an LLM gateway, observability, evals and LLMOps around it."
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "psycopg[binary]>=3.3.6",
+    "python-dotenv>=1.2.3",
+    "redis>=8.1.0",
+]
 
 [dependency-groups]
 dev = [
