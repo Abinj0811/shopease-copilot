@@ -1,5 +1,15 @@
 # Secrets
 .env
+.env.*
+!.env.example
 
 # Python
 .venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+
+# Docker bind-mounted data (Postgres, Redis, Ollama, Grafana)
+volumes/
+.docker-data/
