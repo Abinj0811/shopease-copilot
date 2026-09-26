@@ -5,6 +5,7 @@ description = "AI customer-support copilot for ShopEase, with an LLM gateway, ob
 requires-python = ">=3.11"
 dependencies = [
     "psycopg[binary]>=3.3.6",
+    "pydantic-settings>=2.15.0",
     "python-dotenv>=1.2.3",
     "redis>=8.1.0",
 ]
