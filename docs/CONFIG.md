@@ -38,3 +38,10 @@ Every configurable value (ports, URLs, keys, model aliases, thresholds, counts, 
 | warranty_months | Manufacturer warranty length in months, by category, with a `default` fallback | default: 12, ac: 24 | config/business_rules.yaml | tv: 24 |
 | shipping_sla_days | Expected delivery time in days, by shipping zone | metro: 3, other: 7 | config/business_rules.yaml | metro: 2 |
 | cancellation_allowed_until_status | Latest order status at which self-service cancellation is still allowed | shipped | config/business_rules.yaml | confirmed (stricter) |
+| random_seed | Seed for Faker/random, so seed_db.py's fictional data is reproducible | 42 | config/seed.yaml | 7 |
+| as_of_date | Fixed "today" the fictional dataset and later the refund-eligibility tool measure business_rules.yaml's windows against | 2026-09-27 | config/seed.yaml | 2026-01-01 |
+| n_customers | How many fictional customers to generate | 200 | config/seed.yaml | 50 |
+| n_products | How many fictional products to generate | 60 | config/seed.yaml | 20 |
+| n_orders | How many fictional orders to generate | 500 | config/seed.yaml | 150 |
+| status_distribution | Probability of each order status among generated orders (must sum to 1.0) | delivered 0.55, shipped 0.15, confirmed 0.10, placed 0.05, cancelled 0.10, returned 0.05 | config/seed.yaml | raise `cancelled` for more edge-case coverage |
+| edge_cases_per_category | How many deliberately-crafted orders to seed per named edge case (used by step A20) | 2 each: boundary_return_date, one_day_past_return_window, cancelled_after_shipped, cod_payment, high_value_order, repeated_refunds | config/seed.yaml | raise repeated_refunds to 5 |

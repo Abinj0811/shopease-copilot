@@ -1,0 +1,30 @@
+# Seed-data generation settings for data/seed_db.py (not yet created).
+# as_of_date is also the fixed "today" reference the refund-eligibility tool
+# will use later (config/business_rules.yaml's windows are measured from it),
+# so the fictional dataset and its policy checks stay deterministic.
+
+random_seed: 42
+as_of_date: "2026-09-27"
+
+n_customers: 250
+n_products: 60
+n_orders: 1000
+
+# Must sum to 1.0. Keys match common/business_rules.py's OrderStatus vocabulary.
+status_distribution:
+  delivered: 0.55
+  shipped: 0.15
+  confirmed: 0.10
+  placed: 0.05
+  cancelled: 0.10
+  returned: 0.05
+
+# How many deliberately-crafted edge-case orders data/seed_db.py (step A20)
+# should seed per category; named to match that step's own description.
+edge_cases_per_category:
+  boundary_return_date: 2
+  one_day_past_return_window: 2
+  cancelled_after_shipped: 2
+  cod_payment: 2
+  high_value_order: 2
+  repeated_refunds: 2
