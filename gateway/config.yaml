@@ -13,3 +13,11 @@ model_list:
     litellm_params:
       model: ollama/nomic-embed-text
       api_base: os.environ/OLLAMA_API_BASE
+
+litellm_settings:
+  # The OpenAI SDK always sends an encoding_format on embeddings requests
+  # (base64 by default), and Ollama's embedding endpoint rejects that param
+  # outright. drop_params tells LiteLLM to silently drop params a provider
+  # doesn't support instead of erroring, which is LiteLLM's own documented
+  # fix for this exact case.
+  drop_params: true
