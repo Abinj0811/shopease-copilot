@@ -29,6 +29,25 @@ services:
       timeout: 3s
       retries: 10
 
+  litellm:
+    image: ghcr.io/berriai/litellm:v1.102.1
+    restart: unless-stopped
+    command: ["--config", "/app/config.yaml"]
+    environment:
+      OLLAMA_API_BASE: ${OLLAMA_API_BASE}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+    volumes:
+      - ./gateway/config.yaml:/app/config.yaml:ro
+    ports:
+      - "127.0.0.1:${LITELLM_PORT:-4000}:4000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:4000/health/liveliness', timeout=3)"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
 volumes:
   postgres_data:
   redis_data:
