@@ -30,3 +30,11 @@ Every configurable value (ports, URLs, keys, model aliases, thresholds, counts, 
 | LITELLM_MASTER_KEY | Admin/master key for the LiteLLM proxy; enables its auth and is used by scripts/create_keys.py to call the admin API | sk-local-master-change-me | .env | a securely random `sk-...` value if this ever leaves localhost |
 | LITELLM_DB_NAME | Database name of LiteLLM's own DB on the shared Postgres server, read directly by scripts/show_spend.py from the host (LITELLM_DATABASE_URL's host only resolves inside Docker); keep in step with the db name in LITELLM_DATABASE_URL | litellm | .env | litellm_prod |
 | SPEND_LOG_DEFAULT_LIMIT | Default number of spend log rows scripts/show_spend.py prints (`--limit` overrides it) | 20 | .env | 50 |
+| return_window_days | Days a customer can return a product, by category, with a `default` fallback | default: 10, mixer: 15, phone: 7, tv: 10, ac: 0 | config/business_rules.yaml | add more categories as the catalog grows |
+| defect_replacement_days | Days allowed to claim a defect-based replacement | 15 | config/business_rules.yaml | 30 |
+| refund_timeline_days | Days to pay out an already-approved refund, by payment method | upi: 3, card: 7, cod_bank_transfer: 10 | config/business_rules.yaml | shorten upi to 1 |
+| refund_needs_human_above_inr | Refund amount (INR) above which a human must approve — the "high-value refunds" escalation threshold from CLAUDE.md | 20000 | config/business_rules.yaml | 10000 |
+| high_value_order_inr | Order value (INR) treated as high-value generally, separate from the refund-specific threshold | 50000 | config/business_rules.yaml | 75000 |
+| warranty_months | Manufacturer warranty length in months, by category, with a `default` fallback | default: 12, ac: 24 | config/business_rules.yaml | tv: 24 |
+| shipping_sla_days | Expected delivery time in days, by shipping zone | metro: 3, other: 7 | config/business_rules.yaml | metro: 2 |
+| cancellation_allowed_until_status | Latest order status at which self-service cancellation is still allowed | shipped | config/business_rules.yaml | confirmed (stricter) |

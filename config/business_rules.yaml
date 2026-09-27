@@ -1,0 +1,13 @@
+# ShopEase business rules -- the single source of truth for policy numbers.
+# The copilot must never invent or override these; only tool results and
+# these numbers count as authority (see CLAUDE.md "Safety and guardrails").
+# Validated by common/business_rules.py; inspect with scripts/check_rules.py.
+
+return_window_days: {default: 10, mixer: 15, phone: 7, tv: 10, ac: 0}
+defect_replacement_days: 15
+refund_timeline_days: {upi: 3, card: 7, cod_bank_transfer: 10}
+refund_needs_human_above_inr: 20000
+high_value_order_inr: 50000
+warranty_months: {default: 12, ac: 24}
+shipping_sla_days: {metro: 3, other: 7}
+cancellation_allowed_until_status: shipped
