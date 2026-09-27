@@ -1,0 +1,35 @@
+# Teams for LiteLLM virtual keys. Not read by LiteLLM itself — a later step
+# (scripts/create_keys.py) reads this file and calls LiteLLM's team API
+# (POST /team/new) once per team. Field names match that API directly:
+# team_alias, models, max_budget, rpm_limit, tpm_limit.
+# https://docs.litellm.ai/docs/proxy/users
+#
+# Budgets are in USD (LiteLLM's own unit) and are estimated-equivalent-cost
+# shadow pricing per CLAUDE.md's zero-budget rules, not real spend: cheap and
+# embed run on local Ollama (free), strong runs on Groq's free tier.
+# No keys are created by this file — that's the next step.
+
+teams:
+  - team_alias: copilot
+    # The live app: needs every alias it calls.
+    models: [cheap, strong, embed]
+    max_budget: 5.0
+    rpm_limit: 30
+    tpm_limit: 50000
+
+  - team_alias: evals
+    # Golden-set runs and the LLM judge: same aliases as the app, run in
+    # batches rather than interactively.
+    models: [cheap, strong, embed]
+    max_budget: 2.0
+    rpm_limit: 20
+    tpm_limit: 50000
+
+  - team_alias: loadtest
+    # Locust load tests target a mock upstream, not a real model (CLAUDE.md).
+    # Restricted to the cheapest local alias with a small budget and tight
+    # limits, so a misconfigured run can't reach real infra for long.
+    models: [cheap]
+    max_budget: 0.5
+    rpm_limit: 10
+    tpm_limit: 10000

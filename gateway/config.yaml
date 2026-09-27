@@ -21,3 +21,9 @@ litellm_settings:
   # doesn't support instead of erroring, which is LiteLLM's own documented
   # fix for this exact case.
   drop_params: true
+
+general_settings:
+  database_url: os.environ/LITELLM_DATABASE_URL
+  # Spend tracking is automatic once a database is connected; set explicitly
+  # so the intent from this step is visible in the file, not just implicit.
+  disable_spend_logs: false
