@@ -1,14 +1,19 @@
-# Seed-data generation settings for data/seed_db.py (not yet created).
+# Seed-data generation settings for data/seed_db.py.
 # as_of_date is also the fixed "today" reference the refund-eligibility tool
 # will use later (config/business_rules.yaml's windows are measured from it),
 # so the fictional dataset and its policy checks stay deterministic.
 
 random_seed: 42
 as_of_date: "2026-09-27"
+timezone: Asia/Kolkata            # day arithmetic (return windows) is done in this zone
 
 n_customers: 250
 n_products: 60
 n_orders: 1000
+
+order_no_start: 10001             # SE-10001, SE-10002, ...
+order_history_days: 90            # regular orders are placed within this many days before as_of_date
+items_per_order_max: 3
 
 # Must sum to 1.0. Keys match common/business_rules.py's OrderStatus vocabulary.
 status_distribution:
@@ -19,8 +24,37 @@ status_distribution:
   cancelled: 0.10
   returned: 0.05
 
-# How many deliberately-crafted edge-case orders data/seed_db.py (step A20)
-# should seed per category; named to match that step's own description.
+# Must sum to 1.0. "cod" refunds use business_rules' refund_timeline_days.cod_bank_transfer.
+payment_mode_distribution: {upi: 0.5, card: 0.3, cod: 0.2}
+
+# Must sum to 1.0.
+customer_tier_distribution: {regular: 0.7, silver: 0.2, gold: 0.1}
+
+# Share of customers living in a metro city; decides the shipping_sla_days zone.
+metro_customer_share: 0.5
+metro_cities: [Mumbai, Delhi, Bengaluru, Chennai, Kolkata, Hyderabad]
+
+ticket_rate: 0.15                 # share of regular orders that get a support ticket
+ticket_categories: [delivery_delay, refund_status, return_request, product_defect, general]
+# Marks the cancelled_after_shipped edge case; must not appear in ticket_categories.
+cancel_request_ticket_category: cancel_after_ship
+
+brands: [Nimbus, Voltix, Aurora, Kestrel, Saffron]   # fictional
+
+# Every price_max_inr must stay below business_rules.high_value_order_inr, so
+# only the deliberate high_value_order edge cases cross that threshold.
+product_catalog:
+  phone:           {price_min_inr: 8000,  price_max_inr: 45000}
+  tv:              {price_min_inr: 15000, price_max_inr: 48000}
+  ac:              {price_min_inr: 28000, price_max_inr: 48000}
+  mixer:           {price_min_inr: 2000,  price_max_inr: 9000}
+  laptop:          {price_min_inr: 30000, price_max_inr: 49000}
+  refrigerator:    {price_min_inr: 18000, price_max_inr: 45000}
+  washing_machine: {price_min_inr: 15000, price_max_inr: 40000}
+  headphones:      {price_min_inr: 1000,  price_max_inr: 12000}
+
+# How many deliberately-crafted edge-case orders to seed per category, on top
+# of n_orders. Each is detectable from the data alone (see data/seed_db.py).
 edge_cases_per_category:
   boundary_return_date: 2
   one_day_past_return_window: 2

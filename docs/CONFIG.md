@@ -40,8 +40,21 @@ Every configurable value (ports, URLs, keys, model aliases, thresholds, counts, 
 | cancellation_allowed_until_status | Latest order status at which self-service cancellation is still allowed | shipped | config/business_rules.yaml | confirmed (stricter) |
 | random_seed | Seed for Faker/random, so seed_db.py's fictional data is reproducible | 42 | config/seed.yaml | 7 |
 | as_of_date | Fixed "today" the fictional dataset and later the refund-eligibility tool measure business_rules.yaml's windows against | 2026-09-27 | config/seed.yaml | 2026-01-01 |
-| n_customers | How many fictional customers to generate | 200 | config/seed.yaml | 50 |
+| n_customers | How many fictional customers to generate | 250 | config/seed.yaml | 50 |
 | n_products | How many fictional products to generate | 60 | config/seed.yaml | 20 |
-| n_orders | How many fictional orders to generate | 500 | config/seed.yaml | 150 |
+| n_orders | How many regular fictional orders to generate (edge-case orders are added on top) | 1000 | config/seed.yaml | 150 |
 | status_distribution | Probability of each order status among generated orders (must sum to 1.0) | delivered 0.55, shipped 0.15, confirmed 0.10, placed 0.05, cancelled 0.10, returned 0.05 | config/seed.yaml | raise `cancelled` for more edge-case coverage |
 | edge_cases_per_category | How many deliberately-crafted orders to seed per named edge case (used by step A20) | 2 each: boundary_return_date, one_day_past_return_window, cancelled_after_shipped, cod_payment, high_value_order, repeated_refunds | config/seed.yaml | raise repeated_refunds to 5 |
+| timezone | Time zone for day arithmetic (days since delivery vs return windows) | Asia/Kolkata | config/seed.yaml | UTC |
+| order_no_start | First order number (orders are SE-<n>, numbered chronologically) | 10001 | config/seed.yaml | 50001 |
+| order_history_days | Regular orders are placed within this many days before as_of_date | 90 | config/seed.yaml | 180 |
+| items_per_order_max | Max distinct products in a regular order | 3 | config/seed.yaml | 5 |
+| payment_mode_distribution | Share of each payment mode (sums to 1.0); `cod` refunds use refund_timeline_days.cod_bank_transfer | upi 0.5, card 0.3, cod 0.2 | config/seed.yaml | cod 0.4 for a COD-heavy dataset |
+| customer_tier_distribution | Share of each customer tier (sums to 1.0) | regular 0.7, silver 0.2, gold 0.1 | config/seed.yaml | add platinum |
+| metro_customer_share | Share of customers in metro_cities (picks shipping_sla_days zone) | 0.5 | config/seed.yaml | 0.8 |
+| metro_cities | Cities treated as the metro shipping zone | Mumbai, Delhi, Bengaluru, Chennai, Kolkata, Hyderabad | config/seed.yaml | add Pune |
+| ticket_rate | Share of regular orders that get a support ticket | 0.15 | config/seed.yaml | 0.3 |
+| ticket_categories | Categories for regular support tickets | delivery_delay, refund_status, return_request, product_defect, general | config/seed.yaml | add installation |
+| cancel_request_ticket_category | Ticket category marking the cancelled_after_shipped edge case; must not be in ticket_categories | cancel_after_ship | config/seed.yaml | late_cancel_request |
+| brands | Fictional brand names used in product names | Nimbus, Voltix, Aurora, Kestrel, Saffron | config/seed.yaml | add Orbit |
+| product_catalog | Product categories and their INR price ranges; every max must stay below high_value_order_inr | phone, tv, ac, mixer, laptop, refrigerator, washing_machine, headphones (see file) | config/seed.yaml | add a microwave category |
