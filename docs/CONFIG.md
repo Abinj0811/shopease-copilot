@@ -68,3 +68,9 @@ Every configurable value (ports, URLs, keys, model aliases, thresholds, counts, 
 | exclude_files | Files in policies_dir that are notes rather than policy content, skipped by the indexer | TRAPS.md | config/rag.yaml | add README.md |
 | embed_batch_size | Chunks sent to the gateway per embedding request | 16 | config/rag.yaml | 4 (if the embed model struggles on a small machine) |
 | deprecated_category | Front-matter `category` value that marks a policy doc as Deprecated; `python -m copilot.rag.search` shows it as the result's status | deprecated | config/rag.yaml | superseded |
+| chat_alias | Gateway alias that answers copilot chats (must exist in gateway/config.yaml) | cheap | config/copilot.yaml | strong (hosted model, better tool calling, uses the Groq free tier) |
+| temperature | Sampling temperature for copilot chat calls; 0 for repeatable answers and evals | 0.0 | config/copilot.yaml | 0.3 |
+| max_tool_iterations | Maximum tool-calling rounds per question before the loop stops | 4 | config/copilot.yaml | 6 |
+| prompt_version | Version of the system prompt to load, i.e. `copilot/prompts/<agent_name>/<prompt_version>.md` | v1 | config/copilot.yaml | v2 |
+| agent_name | Agent's name: its prompt folder and the tag on every gateway call | support_agent | config/copilot.yaml | support_agent_beta |
+| max_history_turns | Most recent user+assistant exchanges replayed to the model from a conversation | 4 | config/copilot.yaml | 8 |

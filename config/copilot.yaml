@@ -1,0 +1,8 @@
+# Copilot behaviour settings, read by the chat API (A33) and its history handling (A36).
+
+chat_alias: strong           # gateway alias in gateway/config.yaml that answers chats; never a model name
+temperature: 0.0            # 0 keeps answers and eval runs as repeatable as the model allows
+max_tool_iterations: 4      # tool-calling rounds per question before the loop stops (a small model can loop)
+prompt_version: v1          # copilot/prompts/<agent_name>/<prompt_version>.md, written in A32
+agent_name: support_agent   # names the prompt folder and tags every gateway call for per-agent breakdowns
+max_history_turns: 4        # most recent user+assistant exchanges replayed to the model; keeps the prompt short
