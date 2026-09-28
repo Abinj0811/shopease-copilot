@@ -40,6 +40,12 @@ class Settings(BaseSettings):
     # callers that talk to the gateway must check it is non-empty.
     gateway_api_key: SecretStr = SecretStr("")
 
+    # The copilot team's own virtual key for the chat API (optional here; the
+    # API checks it is non-empty at startup).
+    copilot_gateway_key: SecretStr = SecretStr("")
+    copilot_api_host: str = "127.0.0.1"
+    copilot_api_port: int = Field(default=8001, ge=1, le=65535)
+
 
 def load_settings() -> Settings:
     """Load settings, or raise SettingsError naming every missing/invalid variable."""

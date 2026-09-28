@@ -6,3 +6,7 @@ max_tool_iterations: 4      # tool-calling rounds per question before the loop s
 prompt_version: v1          # copilot/prompts/<agent_name>/<prompt_version>.md, written in A32
 agent_name: support_agent   # names the prompt folder and tags every gateway call for per-agent breakdowns
 max_history_turns: 4        # most recent user+assistant exchanges replayed to the model; keeps the prompt short
+request_timeout_seconds: 120  # how long one gateway call may take before the API gives up
+fallback_reply: >-          # returned when the tool loop hits max_tool_iterations without a final answer
+  Sorry, I could not finish working that out. I can pass you to a human agent
+  who can take it from here. Would you like that?
