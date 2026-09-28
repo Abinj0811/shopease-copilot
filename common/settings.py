@@ -35,6 +35,11 @@ class Settings(BaseSettings):
 
     infra_check_timeout_seconds: int = Field(default=5, ge=1)
 
+    gateway_base_url: str = "http://127.0.0.1:4000/v1"
+    # Optional here so Alembic and other scripts run without a gateway key;
+    # callers that talk to the gateway must check it is non-empty.
+    gateway_api_key: SecretStr = SecretStr("")
+
 
 def load_settings() -> Settings:
     """Load settings, or raise SettingsError naming every missing/invalid variable."""

@@ -64,3 +64,6 @@ Every configurable value (ports, URLs, keys, model aliases, thresholds, counts, 
 | max_chunk_tokens | Approximate token ceiling per chunk; longer chunks split by paragraph | 300 | config/rag.yaml | 200 |
 | top_k | Chunks returned per query | 4 | config/rag.yaml | 3 |
 | min_score | Minimum cosine similarity for a chunk to count as relevant | 0.5 | config/rag.yaml | 0.6 (stricter) |
+| policies_dir | Folder of policy .md files that `python -m copilot.rag.index` chunks and embeds, relative to the repo root | data/policies | config/rag.yaml | data/policies_v2 |
+| exclude_files | Files in policies_dir that are notes rather than policy content, skipped by the indexer | TRAPS.md | config/rag.yaml | add README.md |
+| embed_batch_size | Chunks sent to the gateway per embedding request | 16 | config/rag.yaml | 4 (if the embed model struggles on a small machine) |

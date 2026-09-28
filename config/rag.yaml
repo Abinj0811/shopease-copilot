@@ -6,3 +6,7 @@ chunk_by: h3                # a chunk starts at every H2 or H3 heading (deepest 
 max_chunk_tokens: 300       # ceiling; approximate (words x 1.3), oversized chunks split by paragraph
 top_k: 4                    # chunks returned per query
 min_score: 0.5              # minimum cosine similarity; below it, "unsure, offer a human". Tune in A27
+
+policies_dir: data/policies # folder of policy .md files, relative to the repo root
+exclude_files: [TRAPS.md]   # files in policies_dir that are notes, not policy content, so not indexed
+embed_batch_size: 16        # chunks sent to the gateway per embedding request
