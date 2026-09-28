@@ -1,9 +1,14 @@
-"""Copilot chat API: POST /chat answers one customer message, no history yet.
+"""Copilot chat API: POST /chat answers one customer message, GET /conversations/{id} reads it back.
 
 Run: uv run python -m copilot.api   (host/port from COPILOT_API_HOST/PORT in .env)
 
-Per request: search the policy docs, then let the model answer with the four
-tools available, looping at most `max_tool_iterations` rounds of tool calls.
+Per request: load the last `max_history_turns` exchanges of the conversation,
+search the policy docs, then let the model answer with the four tools
+available, looping at most `max_tool_iterations` rounds of tool calls. The user
+message and the reply are stored together in one transaction after a successful
+answer (so history always holds complete pairs and a failed call stores
+nothing). Only the final text of each turn is stored and replayed: tool calls
+and results are not, so a follow-up sees what was said, not raw tool output.
 Every model and embedding call goes through the LiteLLM gateway with the OpenAI
 SDK (GATEWAY_BASE_URL, COPILOT_GATEWAY_KEY); nothing calls Groq or Ollama.
 
@@ -17,6 +22,7 @@ Synchronous on purpose: the tools and search are sync, and FastAPI runs a plain
 `def` endpoint in a thread pool.
 """
 
+import datetime
 import json
 import sys
 from contextlib import asynccontextmanager
@@ -30,6 +36,8 @@ import yaml
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from openai import OpenAI
+from psycopg.rows import dict_row
+from psycopg.types.json import Json
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -57,7 +65,13 @@ from copilot.tools.escalate import (
     EscalationRecorded,
     escalate,
 )
-from copilot.tools.get_order import GET_ORDER_TOOL, GetOrderArgs, ToolError, get_order
+from copilot.tools.get_order import (
+    GET_ORDER_TOOL,
+    GetOrderArgs,
+    ToolError,
+    connect,
+    get_order,
+)
 
 COPILOT_CONFIG_PATH = REPO_ROOT / "config" / "copilot.yaml"
 PROMPTS_DIR = REPO_ROOT / "copilot" / "prompts"
@@ -90,7 +104,7 @@ class CopilotConfig(BaseModel):
     max_tool_iterations: int = Field(ge=1)
     prompt_version: str = Field(min_length=1)
     agent_name: str = Field(min_length=1)
-    max_history_turns: int = Field(ge=0)  # unused until conversation history exists
+    max_history_turns: int = Field(ge=0)  # 0 turns off replaying history
     request_timeout_seconds: float = Field(gt=0)
     fallback_reply: str = Field(min_length=1)
 
@@ -111,6 +125,23 @@ class ChatResponse(BaseModel):
 class ErrorResponse(BaseModel):
     error: str
     detail: str
+
+
+class StoredMessage(BaseModel):
+    id: int
+    role: str
+    content: str
+    tools_called: list[str]
+    sources: list[str]
+    escalated: bool
+    created_at: datetime.datetime
+
+
+class ConversationResponse(BaseModel):
+    conversation_id: str
+    customer_id: int | None
+    created_at: datetime.datetime
+    messages: list[StoredMessage]
 
 
 @dataclass(frozen=True)
@@ -221,9 +252,61 @@ def cited_sources(reply: str, hits: list[Hit]) -> list[str]:
     return cited
 
 
+def customer_exists(state: AppState, customer_id: int) -> bool:
+    with connect(state.settings) as conn:
+        row = conn.execute("SELECT 1 FROM customers WHERE id = %s", (customer_id,))
+        return row.fetchone() is not None
+
+
+def load_history(state: AppState, conversation_id: str) -> list[dict[str, str]]:
+    """The last `max_history_turns` exchanges, oldest first (empty if none)."""
+    turns = state.cfg.max_history_turns
+    if turns == 0:
+        return []
+    with connect(state.settings) as conn:
+        rows = conn.execute(
+            "SELECT role, content FROM messages WHERE conversation_id = %s "
+            "ORDER BY id DESC LIMIT %s",
+            (conversation_id, turns * 2),
+        ).fetchall()
+    return [{"role": role, "content": content} for role, content in reversed(rows)]
+
+
+def save_exchange(
+    state: AppState,
+    request: ChatRequest,
+    response: ChatResponse,
+    received_at: datetime.datetime,
+) -> None:
+    """Store the user message and the reply in one transaction."""
+    with connect(state.settings) as conn:
+        conn.execute(
+            "INSERT INTO conversations (id, customer_id, created_at) "
+            "VALUES (%s, %s, %s) ON CONFLICT (id) DO NOTHING",
+            (request.conversation_id, request.customer_id, received_at),
+        )
+        conn.execute(
+            "INSERT INTO messages (conversation_id, role, content, created_at) "
+            "VALUES (%s, 'user', %s, %s)",
+            (request.conversation_id, request.message, received_at),
+        )
+        conn.execute(
+            "INSERT INTO messages (conversation_id, role, content, tools_called, "
+            "sources, escalated) VALUES (%s, 'assistant', %s, %s, %s, %s)",
+            (
+                request.conversation_id,
+                response.reply,
+                Json(response.tools_called),
+                Json(response.sources),
+                response.escalated,
+            ),
+        )
+
+
 def run_chat(state: AppState, request: ChatRequest) -> ChatResponse:
     cfg, rag_cfg = state.cfg, state.rag_cfg
     extra_body = gateway_metadata(state, request.conversation_id)
+    history = load_history(state, request.conversation_id)
 
     hits = search_policies(
         state.client,
@@ -241,6 +324,7 @@ def run_chat(state: AppState, request: ChatRequest) -> ChatResponse:
             "role": "system",
             "content": excerpts_message(hits, rag_cfg.deprecated_category),
         },
+        *history,
         {"role": "user", "content": request.message},
     ]
     tools_called: list[str] = []
@@ -312,6 +396,21 @@ def error_response(status: int, error: str, detail: str) -> JSONResponse:
     return JSONResponse(status_code=status, content={"error": error, "detail": detail})
 
 
+def database_error_response(exc: psycopg.Error) -> JSONResponse:
+    if isinstance(exc, psycopg.errors.UndefinedTable):
+        return error_response(
+            503,
+            "database_not_migrated",
+            "A required table is missing; run "
+            "`uv run alembic -c db/alembic.ini upgrade head`.",
+        )
+    return error_response(
+        503,
+        "database_unavailable",
+        "Cannot reach the database; is `docker compose up -d` running?",
+    )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.copilot = load_state()
@@ -332,8 +431,17 @@ app = FastAPI(title="ShopEase Copilot", lifespan=lifespan)
 )
 def chat(request: ChatRequest, http_request: Request) -> ChatResponse | JSONResponse:
     state: AppState = http_request.app.state.copilot
+    received_at = datetime.datetime.now(datetime.UTC)
     try:
-        return run_chat(state, request)
+        if request.customer_id is not None and not customer_exists(
+            state, request.customer_id
+        ):
+            return error_response(
+                422, "unknown_customer", f"No customer with id {request.customer_id}."
+            )
+        response = run_chat(state, request)
+        save_exchange(state, request, response, received_at)
+        return response
     except openai.APITimeoutError:
         return error_response(
             503,
@@ -373,12 +481,49 @@ def chat(request: ChatRequest, http_request: Request) -> ChatResponse | JSONResp
     except SearchError as exc:
         hint = f" ({exc.hint})" if exc.hint else ""
         return error_response(503, "retrieval_unavailable", f"{exc}{hint}")
-    except psycopg.Error:
-        return error_response(
-            503,
-            "database_unavailable",
-            "Cannot reach the database; is `docker compose up -d` running?",
-        )
+    except psycopg.Error as exc:
+        return database_error_response(exc)
+
+
+@app.get(
+    "/conversations/{conversation_id}",
+    response_model=ConversationResponse,
+    responses={404: {"model": ErrorResponse}, 503: {"model": ErrorResponse}},
+)
+def get_conversation(
+    conversation_id: str, http_request: Request
+) -> ConversationResponse | JSONResponse:
+    state: AppState = http_request.app.state.copilot
+    try:
+        with (
+            connect(state.settings) as conn,
+            conn.cursor(row_factory=dict_row) as cur,
+        ):
+            cur.execute(
+                "SELECT id, customer_id, created_at FROM conversations WHERE id = %s",
+                (conversation_id,),
+            )
+            conversation = cur.fetchone()
+            if conversation is None:
+                return error_response(
+                    404,
+                    "conversation_not_found",
+                    f"No conversation with id {conversation_id!r} exists.",
+                )
+            cur.execute(
+                "SELECT id, role, content, tools_called, sources, escalated, "
+                "created_at FROM messages WHERE conversation_id = %s ORDER BY id",
+                (conversation_id,),
+            )
+            messages = cur.fetchall()
+    except psycopg.Error as exc:
+        return database_error_response(exc)
+    return ConversationResponse(
+        conversation_id=conversation["id"],
+        customer_id=conversation["customer_id"],
+        created_at=conversation["created_at"],
+        messages=[StoredMessage(**message) for message in messages],
+    )
 
 
 def main() -> int:
