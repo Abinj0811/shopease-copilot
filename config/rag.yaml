@@ -1,0 +1,8 @@
+# Retrieval settings for the policy RAG (indexer in A26, search in A27).
+
+embed_alias: embed          # gateway alias in gateway/config.yaml; never a model name
+embed_dim: 768              # must equal the embed model's vector length (check_gateway.py --alias embed)
+chunk_by: h3                # a chunk starts at every H2 or H3 heading (deepest level wins)
+max_chunk_tokens: 300       # ceiling; approximate (words x 1.3), oversized chunks split by paragraph
+top_k: 4                    # chunks returned per query
+min_score: 0.5              # minimum cosine similarity; below it, "unsure, offer a human". Tune in A27

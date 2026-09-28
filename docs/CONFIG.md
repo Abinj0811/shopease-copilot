@@ -58,3 +58,9 @@ Every configurable value (ports, URLs, keys, model aliases, thresholds, counts, 
 | cancel_request_ticket_category | Ticket category marking the cancelled_after_shipped edge case; must not be in ticket_categories | cancel_after_ship | config/seed.yaml | late_cancel_request |
 | brands | Fictional brand names used in product names | Nimbus, Voltix, Aurora, Kestrel, Saffron | config/seed.yaml | add Orbit |
 | product_catalog | Product categories and their INR price ranges; every max must stay below high_value_order_inr | phone, tv, ac, mixer, laptop, refrigerator, washing_machine, headphones (see file) | config/seed.yaml | add a microwave category |
+| embed_alias | Gateway alias used to embed policy chunks and queries | embed | config/rag.yaml | a second alias if you add a different embedder |
+| embed_dim | Embedding vector length; must match the embed model and the pgvector column | 768 | config/rag.yaml | 1024 (with a different model, new migration and reindex) |
+| chunk_by | Heading level policy docs are split at (a chunk starts at each H2 or H3) | h3 | config/rag.yaml | h2 (fewer, longer chunks) |
+| max_chunk_tokens | Approximate token ceiling per chunk; longer chunks split by paragraph | 300 | config/rag.yaml | 200 |
+| top_k | Chunks returned per query | 4 | config/rag.yaml | 3 |
+| min_score | Minimum cosine similarity for a chunk to count as relevant | 0.5 | config/rag.yaml | 0.6 (stricter) |
