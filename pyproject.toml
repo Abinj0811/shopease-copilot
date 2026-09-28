@@ -21,3 +21,7 @@ dev = [
     "ruff",
     "pytest",
 ]
+
+[tool.pytest.ini_options]
+# Put the repo root on sys.path so tests can import copilot, common, data and scripts.
+pythonpath = ["."]
