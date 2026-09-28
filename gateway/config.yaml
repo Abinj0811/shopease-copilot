@@ -27,6 +27,16 @@ litellm_settings:
   # fix for this exact case.
   drop_params: true
 
+  # Prometheus metrics, served by the proxy itself on /metrics (same port as
+  # the API, LITELLM_PORT). Not enterprise-gated in this version: request,
+  # latency, token, spend and fallback metrics are all in the open-source build.
+  callbacks:
+    - prometheus
+  # Since v1.85 /metrics requires a LiteLLM key by default. Kept on (the secure
+  # default, stated explicitly like disable_spend_logs below); a scraper must
+  # then send `Authorization: Bearer <key>`.
+  require_auth_for_metrics_endpoint: true
+
 # Reliability. When a `strong` call fails (429, 5xx, timeout, connection error),
 # the same deployment is retried num_retries times, then the request falls back
 # to `cheap`. Tool-calling requests fall back too: `cheap` honours `tools`.
