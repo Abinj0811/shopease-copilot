@@ -10,3 +10,4 @@ min_score: 0.5              # minimum cosine similarity; below it, "unsure, offe
 policies_dir: data/policies # folder of policy .md files, relative to the repo root
 exclude_files: [TRAPS.md]   # files in policies_dir that are notes, not policy content, so not indexed
 embed_batch_size: 16        # chunks sent to the gateway per embedding request
+deprecated_category: deprecated  # front-matter category that marks a doc as Deprecated; shown as its status in search results

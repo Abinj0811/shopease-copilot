@@ -67,3 +67,4 @@ Every configurable value (ports, URLs, keys, model aliases, thresholds, counts, 
 | policies_dir | Folder of policy .md files that `python -m copilot.rag.index` chunks and embeds, relative to the repo root | data/policies | config/rag.yaml | data/policies_v2 |
 | exclude_files | Files in policies_dir that are notes rather than policy content, skipped by the indexer | TRAPS.md | config/rag.yaml | add README.md |
 | embed_batch_size | Chunks sent to the gateway per embedding request | 16 | config/rag.yaml | 4 (if the embed model struggles on a small machine) |
+| deprecated_category | Front-matter `category` value that marks a policy doc as Deprecated; `python -m copilot.rag.search` shows it as the result's status | deprecated | config/rag.yaml | superseded |

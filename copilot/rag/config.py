@@ -23,6 +23,7 @@ class RagConfig(BaseModel):
     policies_dir: Path
     exclude_files: list[str]
     embed_batch_size: int = Field(ge=1)
+    deprecated_category: str = Field(min_length=1)
 
     @property
     def policies_path(self) -> Path:
