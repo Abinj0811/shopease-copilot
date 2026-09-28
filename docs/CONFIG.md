@@ -74,8 +74,13 @@ Every configurable value (ports, URLs, keys, model aliases, thresholds, counts, 
 | prompt_version | Version of the system prompt to load, i.e. `copilot/prompts/<agent_name>/<prompt_version>.md` | v1 | config/copilot.yaml | v2 |
 | agent_name | Agent's name: its prompt folder and the tag on every gateway call | support_agent | config/copilot.yaml | support_agent_beta |
 | max_history_turns | Most recent user+assistant exchanges replayed to the model from a conversation | 4 | config/copilot.yaml | 8 |
-| request_timeout_seconds | Seconds one gateway call (chat or embedding) may take before the chat API gives up | 120 | config/copilot.yaml | 300 (slow local model on CPU) |
+| request_timeout_seconds | Seconds one gateway call (chat or embedding) may take before the chat API gives up; scripts/check_fallback.py uses the same budget | 120 | config/copilot.yaml | 300 (slow local model on CPU) |
 | fallback_reply | Reply returned when the tool-calling loop hits max_tool_iterations without a final answer; should offer a human handoff | "Sorry, I could not finish working that out. I can pass you to a human agent who can take it from here. Would you like that?" | config/copilot.yaml | a version in another language |
 | COPILOT_GATEWAY_KEY | The `copilot` team's virtual key (from scripts/create_keys.py) that the chat API uses for every gateway call; checked at startup | sk-not-required-yet | .env | a real `sk-...` key |
 | COPILOT_API_HOST | Interface the chat API (`python -m copilot.api`) listens on | 127.0.0.1 | .env | 0.0.0.0 (to reach it from another machine) |
 | COPILOT_API_PORT | Port the chat API listens on | 8001 | .env | 8002 |
+| router_settings.fallbacks | Fallback chain: when a `strong` call still fails after its retries (429, 5xx, timeout, connection error), the request is answered by `cheap`; tool-calling requests fall back too | [{"strong": ["cheap"]}] | gateway/config.yaml | [] (no fallback; failures reach the API as errors) |
+| router_settings.num_retries | Retries on the same alias before falling back; each retry can cost up to that alias's timeout | 1 | gateway/config.yaml | 2 (more patience with 429s, longer worst case) |
+| router_settings.timeout | Default gateway timeout in seconds for aliases without their own (currently `embed`) | 30 | gateway/config.yaml | 60 |
+| strong timeout (litellm_params.timeout) | Seconds a `strong` (Groq) call may take before it counts as failed, then retries and falls back | 30 | gateway/config.yaml | 15 |
+| cheap timeout (litellm_params.timeout) | Seconds a `cheap` (local CPU) call may take; measured 27 s warm to 47 s cold for a ~1,400-token tool-calling request. The worst case strong-timeouts + one cheap call must stay under request_timeout_seconds in config/copilot.yaml | 100 | gateway/config.yaml | 150 (slower machine) |

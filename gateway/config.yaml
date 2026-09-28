@@ -3,11 +3,16 @@ model_list:
     litellm_params:
       model: ollama_chat/qwen3:1.7b
       api_base: os.environ/OLLAMA_API_BASE
+      # Local CPU inference is slow: a ~1,400-token tool-calling request took
+      # 27 s warm and 47 s cold, so this is the fallback's time budget.
+      timeout: 100
 
   - model_name: strong
     litellm_params:
       model: groq/openai/gpt-oss-20b
       api_key: os.environ/GROQ_API_KEY
+      # Groq normally answers in seconds; fail fast and fall back to cheap.
+      timeout: 30
 
   - model_name: embed
     litellm_params:
@@ -21,6 +26,17 @@ litellm_settings:
   # doesn't support instead of erroring, which is LiteLLM's own documented
   # fix for this exact case.
   drop_params: true
+
+# Reliability. When a `strong` call fails (429, 5xx, timeout, connection error),
+# the same deployment is retried num_retries times, then the request falls back
+# to `cheap`. Tool-calling requests fall back too: `cheap` honours `tools`.
+# Worst case before the fallback answers is about strong's two timeouts (60 s)
+# plus one cheap call (27-47 s), which must stay under the copilot API's own
+# client timeout (request_timeout_seconds in config/copilot.yaml).
+router_settings:
+  fallbacks: [{"strong": ["cheap"]}]
+  num_retries: 1
+  timeout: 30 # default for aliases without their own timeout (embed)
 
 general_settings:
   database_url: os.environ/LITELLM_DATABASE_URL
