@@ -1,0 +1,45 @@
+{
+  "uid": "shopease-gateway",
+  "title": "ShopEase Gateway",
+  "tags": ["shopease", "gateway"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Requests per Minute, by Requested Model",
+      "description": "litellm_proxy_total_requests_metric_total split by requested_model (the alias the client asked for, e.g. cheap/strong/embed) -- not litellm_requests_metric_total, which LiteLLM marks deprecated.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 0 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqpm",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (requested_model) (rate(litellm_proxy_total_requests_metric_total[$__rate_interval])) * 60",
+          "legendFormat": "{{requested_model}}"
+        }
+      ]
+    }
+  ]
+}

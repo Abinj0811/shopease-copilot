@@ -85,8 +85,10 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
     volumes:
       - grafana_data:/var/lib/grafana
-      # Datasource provisioning (observability/grafana/provisioning/datasources).
+      # Datasource + dashboard provisioning (observability/grafana/provisioning).
       - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      # Dashboard JSON files the provider above loads (path: in dashboards.yml).
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
       - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
     healthcheck:

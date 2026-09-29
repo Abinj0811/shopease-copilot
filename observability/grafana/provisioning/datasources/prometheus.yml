@@ -8,6 +8,11 @@ apiVersion: 1
 
 datasources:
   - name: Prometheus
+    # Fixed, human-chosen UID (not Grafana's auto-generated one) so dashboard
+    # JSON can reference this datasource by an explicit, stable id instead of
+    # a plain name -- Grafana's query API does not resolve plain names or fall
+    # back to isDefault, only a real uid.
+    uid: prometheus
     type: prometheus
     access: proxy
     url: http://prometheus:9090

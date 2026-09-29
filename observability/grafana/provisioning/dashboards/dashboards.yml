@@ -1,0 +1,20 @@
+# Auto-provisioned dashboard loader: any JSON file dropped in
+# observability/grafana/dashboards/ appears in Grafana with no manual import.
+# That folder is bind-mounted into the container at options.path below
+# (docker-compose.yml, the grafana service).
+
+apiVersion: 1
+
+providers:
+  - name: ShopEase
+    orgId: 1
+    folder: ""
+    type: file
+    disableDeletion: false
+    # How often Grafana rescans the folder for new or edited dashboard files.
+    updateIntervalSeconds: 30
+    # false: dashboards are owned by these files, not hand-edited in the UI --
+    # a UI change would otherwise be silently overwritten on the next rescan.
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards
