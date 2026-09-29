@@ -50,6 +50,28 @@ services:
       timeout: 3s
       retries: 10
 
+  # Optional: started only with `docker compose --profile obs up -d`, so the
+  # default stack stays small on an 8 GB machine.
+  prometheus:
+    image: prom/prometheus:v3.15.0
+    profiles: ["obs"]
+    restart: unless-stopped
+    volumes:
+      # Scrape config, and the bearer token it points at. The token holds
+      # LITELLM_MASTER_KEY (/metrics is an admin route) and is gitignored --
+      # it must never be committed. Both read-only: Prometheus only reads them.
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/litellm_token:/etc/prometheus/litellm_token:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
 volumes:
   postgres_data:
   redis_data:
+  prometheus_data:
