@@ -97,8 +97,39 @@ services:
       timeout: 3s
       retries: 10
 
+  phoenix:
+    image: arizephoenix/phoenix:20.16.0
+    profiles: ["obs"]
+    restart: unless-stopped
+    environment:
+      # SQLite in the named volume, not the shared Postgres.
+      PHOENIX_WORKING_DIR: /mnt/data
+    volumes:
+      - phoenix_data:/mnt/data
+    ports:
+      # UI + OTLP/HTTP collector.
+      - "127.0.0.1:${PHOENIX_PORT:-6006}:6006"
+      # OTLP/gRPC collector. Exposed to the host (not just the compose
+      # network) because copilot/api.py currently runs on the host, not in
+      # Docker; a future OTel exporter there needs 127.0.0.1 reachability.
+      - "127.0.0.1:${PHOENIX_GRPC_PORT:-4317}:4317"
+    healthcheck:
+      # The image has no shell and no wget/curl (exec-only, python3 present),
+      # unlike the other services here -- same reason as litellm's healthcheck.
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import urllib.request as u; u.urlopen('http://localhost:6006/healthz', timeout=3)",
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
 volumes:
   postgres_data:
   redis_data:
   prometheus_data:
   grafana_data:
+  phoenix_data:

@@ -87,6 +87,8 @@ Every configurable value (ports, URLs, keys, model aliases, thresholds, counts, 
 | GRAFANA_PORT | Host port mapped to the Grafana container (bound to 127.0.0.1); the service only starts with `docker compose --profile obs up -d` | 3000 | .env | 3001 |
 | GRAFANA_ADMIN_USER | Grafana admin login username | admin | .env | grafana_admin |
 | GRAFANA_ADMIN_PASSWORD | Grafana admin login password (required, no default; Compose fails if unset) | none, `.env` only | .env | a long random string |
+| PHOENIX_PORT | Host port mapped to Phoenix's UI + OTLP/HTTP collector (bound to 127.0.0.1); the service only starts with `docker compose --profile obs up -d` | 6006 | .env | 6007 |
+| PHOENIX_GRPC_PORT | Host port mapped to Phoenix's OTLP/gRPC trace collector (bound to 127.0.0.1); needed because copilot/api.py runs on the host, not in Docker | 4317 | .env | 4318 |
 | global.scrape_interval | How often Prometheus scrapes the gateway's /metrics/ (one place to change the rate for every job) | 30s | observability/prometheus.yml | 15s (finer graphs, more storage) |
 | global.scrape_timeout | How long one scrape may take before Prometheus abandons it; must stay <= scrape_interval | 10s | observability/prometheus.yml | 5s |
 | scrape_configs.authorization.credentials_file | Path *inside the Prometheus container* to the file holding LITELLM_MASTER_KEY, since /metrics is an admin route and Prometheus cannot read .env. You create the host file yourself (observability/litellm_token) and it must stay gitignored | /etc/prometheus/litellm_token | observability/prometheus.yml | /run/secrets/litellm_token (Docker secret) |
