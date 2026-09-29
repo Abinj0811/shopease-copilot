@@ -76,7 +76,27 @@ services:
       timeout: 3s
       retries: 10
 
+  grafana:
+    image: grafana/grafana:13.2.2
+    profiles: ["obs"]
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?set GRAFANA_ADMIN_PASSWORD in .env}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      # Datasource provisioning (observability/grafana/provisioning/datasources).
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
 volumes:
   postgres_data:
   redis_data:
   prometheus_data:
+  grafana_data:

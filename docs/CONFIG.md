@@ -84,6 +84,9 @@ Every configurable value (ports, URLs, keys, model aliases, thresholds, counts, 
 | router_settings.timeout | Default gateway timeout in seconds for aliases without their own (currently `embed`) | 30 | gateway/config.yaml | 60 |
 | strong timeout (litellm_params.timeout) | Seconds a `strong` (Groq) call may take before it counts as failed, then retries and falls back | 30 | gateway/config.yaml | 15 |
 | PROMETHEUS_PORT | Host port mapped to the Prometheus container (bound to 127.0.0.1); the service only starts with `docker compose --profile obs up -d` | 9090 | .env | 9091 |
+| GRAFANA_PORT | Host port mapped to the Grafana container (bound to 127.0.0.1); the service only starts with `docker compose --profile obs up -d` | 3000 | .env | 3001 |
+| GRAFANA_ADMIN_USER | Grafana admin login username | admin | .env | grafana_admin |
+| GRAFANA_ADMIN_PASSWORD | Grafana admin login password (required, no default; Compose fails if unset) | none, `.env` only | .env | a long random string |
 | global.scrape_interval | How often Prometheus scrapes the gateway's /metrics/ (one place to change the rate for every job) | 30s | observability/prometheus.yml | 15s (finer graphs, more storage) |
 | global.scrape_timeout | How long one scrape may take before Prometheus abandons it; must stay <= scrape_interval | 10s | observability/prometheus.yml | 5s |
 | scrape_configs.authorization.credentials_file | Path *inside the Prometheus container* to the file holding LITELLM_MASTER_KEY, since /metrics is an admin route and Prometheus cannot read .env. You create the host file yourself (observability/litellm_token) and it must stay gitignored | /etc/prometheus/litellm_token | observability/prometheus.yml | /run/secrets/litellm_token (Docker secret) |
