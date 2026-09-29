@@ -27,6 +27,19 @@ litellm_settings:
   # fix for this exact case.
   drop_params: true
 
+  # Response cache in Redis. Identical requests (same model, messages and
+  # params) are answered from cache instead of the provider, which is what
+  # CLAUDE.md's zero-budget rule asks for so eval re-runs are free. Host and
+  # port come from REDIS_HOST/REDIS_PORT in the litellm service's environment
+  # (docker-compose.yml), which point at the compose service, not 127.0.0.1.
+  cache: true
+  cache_params:
+    type: redis
+    ttl: 3600
+    # Embeddings are cached too: re-indexing unchanged policy docs then costs
+    # nothing and returns identical vectors.
+    supported_call_types: ["acompletion", "completion", "aembedding", "embedding"]
+
   # Prometheus metrics, served by the proxy itself on /metrics (same port as
   # the API, LITELLM_PORT). Not enterprise-gated in this version: request,
   # latency, token, spend and fallback metrics are all in the open-source build.

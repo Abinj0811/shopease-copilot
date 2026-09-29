@@ -1,0 +1,17 @@
+# Auto-provisioned Grafana datasource: no manual "Add data source" click needed.
+# http://prometheus:9090 is the Compose service name, not localhost -- this
+# file is read from inside the grafana container, which reaches Prometheus
+# over the Compose network, the same pattern as observability/prometheus.yml
+# reaching litellm.
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    # Editable in the UI for local exploration; provisioning still owns the
+    # file, so a container restart resets any hand-made change here.
+    editable: true

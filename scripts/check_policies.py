@@ -7,8 +7,15 @@ matter holding exactly REQUIRED_FIELDS, and its body must be a clean heading
 tree: no H1 (the title lives in the front matter), first heading an H2, no
 skipped levels, no duplicate sibling headings, no empty sections. The RAG
 indexer later chunks by heading and stores file#heading, so these are the
-properties it relies on. Prints one row per file with its word count; exits 1
-if any file is invalid.
+properties it relies on.
+
+Every number a doc states in days, months or rupees must also appear in
+config/business_rules.yaml, so editing a policy number there can never leave
+the docs quoting a figure the tools disagree with. Docs whose front-matter
+category is the deprecated one are exempt: holding outdated numbers is the
+whole point of the deprecated trap.
+
+Prints one row per file with its word count; exits 1 if any file is invalid.
 """
 
 import argparse
@@ -20,6 +27,12 @@ from pathlib import Path
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+# Plain `python scripts/check_policies.py` only puts scripts/ on sys.path.
+sys.path.insert(0, str(REPO_ROOT))
+
+from common.business_rules import BusinessRules, load_business_rules
+from copilot.rag.config import load_rag_config
+
 DEFAULT_DIR = REPO_ROOT / "data" / "policies"
 
 REQUIRED_FIELDS = ("title", "category", "version", "last_updated")
@@ -28,6 +41,51 @@ NON_POLICY_FILES = {"TRAPS.md"}
 
 HEADING = re.compile(r"^(#{1,6})\s+(\S.*?)\s*$")
 CATEGORY = re.compile(r"[a-z][a-z0-9_-]*")
+
+# Docs that quote specific rules. Without this, a per-category edit hides behind
+# another category's identical number (phone 7 -> 5 still "passes" while card
+# refunds are also 7). Values are dotted paths into config/business_rules.yaml;
+# any doc or unit not listed falls back to the all-rules set.
+DOC_RULES: dict[str, dict[str, tuple[str, ...]]] = {
+    "returns-phones.md": {"days": ("return_window_days.phone",)},
+    "returns-tvs.md": {"days": ("return_window_days.tv",)},
+    "returns-mixers.md": {"days": ("return_window_days.mixer",)},
+    "returns-acs.md": {"days": ("return_window_days.ac",)},
+    "returns-other-categories.md": {"days": ("return_window_days.default",)},
+    "defect-replacement-policy.md": {"days": ("defect_replacement_days",)},
+    "shipping-sla-metro.md": {"days": ("shipping_sla_days.metro",)},
+    "shipping-sla-other.md": {"days": ("shipping_sla_days.other",)},
+    "cod-refund-process.md": {"days": ("refund_timeline_days.cod_bank_transfer",)},
+    "refund-payout-timelines.md": {
+        "days": (
+            "refund_timeline_days.upi",
+            "refund_timeline_days.card",
+            "refund_timeline_days.cod_bank_transfer",
+        )
+    },
+    "refunds-faq.md": {
+        "days": (
+            "refund_timeline_days.upi",
+            "refund_timeline_days.card",
+            "refund_timeline_days.cod_bank_transfer",
+        )
+    },
+    "warranty-acs.md": {
+        "days": ("defect_replacement_days",),
+        "months": ("warranty_months.ac", "warranty_months.default"),
+    },
+    "warranty-overview.md": {
+        "days": ("defect_replacement_days",),
+        "months": ("warranty_months.default", "warranty_months.ac"),
+    },
+}
+
+# Numeric claims, by unit. "**15 days**", "0-day" and "₹20,000" all match.
+NUMBER_PATTERNS = {
+    "days": re.compile(r"(\d[\d,]*)[\s-]*(?:day|days)\b", re.IGNORECASE),
+    "months": re.compile(r"(\d[\d,]*)[\s-]*(?:month|months)\b", re.IGNORECASE),
+    "INR": re.compile(r"(?:₹|\bINR)\s*([\d,]+)", re.IGNORECASE),
+}
 
 
 def split_front_matter(lines: list[str]) -> tuple[object, list[str], int, list[str]]:
@@ -127,7 +185,70 @@ def word_count(body: list[str]) -> int:
     )
 
 
-def check_file(path: Path) -> tuple[object, int, list[str]]:
+def allowed_numbers(rules: BusinessRules) -> dict[str, set[int]]:
+    """Every number the policy docs are allowed to state, by unit."""
+    return {
+        "days": {
+            *rules.return_window_days.values(),
+            rules.defect_replacement_days,
+            *rules.refund_timeline_days.model_dump().values(),
+            *rules.shipping_sla_days.model_dump().values(),
+        },
+        "months": set(rules.warranty_months.values()),
+        "INR": {rules.refund_needs_human_above_inr, rules.high_value_order_inr},
+    }
+
+
+def rule_value(rules: BusinessRules, path: str) -> int:
+    """Read one number out of business_rules.yaml by dotted path."""
+    parts = path.split(".")
+    node: object = getattr(rules, parts[0])
+    for part in parts[1:]:
+        node = node[part] if isinstance(node, dict) else getattr(node, part)
+    if not isinstance(node, int):
+        raise TypeError(f"{path} is not a number")
+    return node
+
+
+def check_numbers(
+    name: str,
+    body: list[str],
+    first_line: int,
+    allowed: dict[str, set[int]],
+    rules: BusinessRules,
+) -> list[str]:
+    """Flag any day/month/rupee figure the doc is not entitled to state.
+
+    Docs listed in DOC_RULES are held to exactly the rules they quote; the rest
+    only have to use a number that exists somewhere in business_rules.yaml.
+    """
+    errors = []
+    for offset, line in enumerate(body):
+        for unit, pattern in NUMBER_PATTERNS.items():
+            paths = DOC_RULES.get(name, {}).get(unit)
+            expected = (
+                {rule_value(rules, p) for p in paths}
+                if paths is not None
+                else allowed[unit]
+            )
+            source = ", ".join(paths) if paths is not None else f"any {unit} rule"
+            for match in pattern.finditer(line):
+                value = int(match.group(1).replace(",", ""))
+                if value not in expected:
+                    errors.append(
+                        f"line {first_line + offset}: {match.group(0).strip()!r} does "
+                        f"not match config/business_rules.yaml ({source} = "
+                        f"{sorted(expected)})"
+                    )
+    return errors
+
+
+def check_file(
+    path: Path,
+    allowed: dict[str, set[int]],
+    deprecated_category: str,
+    rules: BusinessRules,
+) -> tuple[object, int, list[str]]:
     try:
         lines = path.read_text(encoding="utf-8").splitlines()
     except (OSError, UnicodeDecodeError) as exc:
@@ -136,6 +257,9 @@ def check_file(path: Path) -> tuple[object, int, list[str]]:
     if not errors:
         errors = check_front_matter(meta)
     errors += check_headings(body, first_line)
+    # A deprecated doc is meant to hold superseded numbers.
+    if field(meta, "category") != deprecated_category:
+        errors += check_numbers(path.name, body, first_line, allowed, rules)
     return meta, word_count(body), errors
 
 
@@ -150,6 +274,14 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    try:
+        rules = load_business_rules()
+        allowed = allowed_numbers(rules)
+        deprecated_category = load_rag_config().deprecated_category
+    except Exception as exc:  # noqa: BLE001 - any config problem is reported the same way
+        print(f"FAIL  cannot load config: {exc}")
+        return 1
+
     if not args.dir.is_dir():
         print(f"FAIL  policy folder not found: {args.dir}")
         return 1
@@ -160,8 +292,10 @@ def main() -> int:
 
     rows = []
     failures: list[tuple[str, list[str]]] = []
+    # A renamed doc would silently lose its exact-rule check, so say so loudly.
+    orphaned = sorted(set(DOC_RULES) - {p.name for p in files})
     for path in files:
-        meta, words, errors = check_file(path)
+        meta, words, errors = check_file(path, allowed, deprecated_category, rules)
         rows.append(
             (
                 path.name,
@@ -189,10 +323,17 @@ def main() -> int:
         for error in errors:
             print(f"      - {error}")
 
+    if orphaned:
+        print(
+            f"\nFAIL  DOC_RULES lists files that are not in {args.dir}: "
+            f"{', '.join(orphaned)}"
+        )
+        print("      those docs would lose their exact-rule check; fix the mapping")
+
     total_words = sum(int(r[4]) for r in rows)
     valid = len(rows) - len(failures)
     print(f"\n{valid}/{len(rows)} files valid, {total_words} words total")
-    return 1 if failures else 0
+    return 1 if failures or orphaned else 0
 
 
 if __name__ == "__main__":

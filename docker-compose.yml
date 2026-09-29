@@ -38,6 +38,11 @@ services:
       GROQ_API_KEY: ${GROQ_API_KEY}
       LITELLM_DATABASE_URL: ${LITELLM_DATABASE_URL}
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+      # Redis response cache (litellm_settings.cache_params in gateway/config.yaml).
+      # The compose service name and its in-container port, not REDIS_HOST/
+      # REDIS_PORT from .env: those are the host-side values the scripts use.
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
     volumes:
       - ./gateway/config.yaml:/app/config.yaml:ro
     ports:

@@ -13,11 +13,19 @@ import sys
 from pathlib import Path
 
 import openai
+import yaml
 from dotenv import load_dotenv
 from openai import OpenAI
 
-ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+ENV_PATH = REPO_ROOT / ".env"
+RAG_CONFIG_PATH = REPO_ROOT / "config" / "rag.yaml"
 COMPOSE_HINT = "is `docker compose up -d litellm` running?"
+
+
+def embedding_alias() -> str:
+    """The alias that serves embeddings, so renaming it does not break this check."""
+    return yaml.safe_load(RAG_CONFIG_PATH.read_text(encoding="utf-8"))["embed_alias"]
 
 
 class ConfigError(Exception):
@@ -52,7 +60,7 @@ def run(alias: str, prompt: str) -> int:
     )
 
     try:
-        if alias == "embed":
+        if alias == embedding_alias():
             # The SDK defaults to encoding_format="base64"; Ollama's embedding
             # endpoint (via LiteLLM) rejects that param, so ask for floats.
             raw = client.embeddings.with_raw_response.create(
