@@ -116,6 +116,146 @@
           "legendFormat": "p95 {{requested_model}}"
         }
       ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Failed Requests per Minute, by Exception Status",
+      "description": "litellm_proxy_failed_requests_metric, grouped by exception_status (its status-code-bearing label; this metric has no separate status_code label). Shows No data until a request actually fails in the current litellm process -- counters reset on restart.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 27 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqpm",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (exception_status) (rate(litellm_proxy_failed_requests_metric_total[$__rate_interval])) * 60",
+          "legendFormat": "status {{exception_status}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Fallback Count per Minute (Requested Model ≠ Serving Model)",
+      "description": "litellm_deployment_successful_fallbacks / litellm_deployment_failed_fallbacks: a fallback fires exactly when requested_model (what the client asked for) didn't serve the request and fallback_model did instead. Shows No data until a fallback actually happens -- counters reset on restart.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 36 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqpm",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (requested_model, fallback_model) (rate(litellm_deployment_successful_fallbacks_total[$__rate_interval])) * 60",
+          "legendFormat": "{{requested_model}} -> {{fallback_model}} (ok)"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (requested_model, fallback_model) (rate(litellm_deployment_failed_fallbacks_total[$__rate_interval])) * 60",
+          "legendFormat": "{{requested_model}} -> {{fallback_model}} (failed)"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Input / Output Tokens per Minute, by Requested Model",
+      "description": "litellm_input_tokens_metric and litellm_output_tokens_metric, grouped by requested_model (the alias the client asked for).",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 45 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (requested_model) (rate(litellm_input_tokens_metric_total[$__rate_interval])) * 60",
+          "legendFormat": "input {{requested_model}}"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (requested_model) (rate(litellm_output_tokens_metric_total[$__rate_interval])) * 60",
+          "legendFormat": "output {{requested_model}}"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Spend per Minute, by Team",
+      "description": "litellm_spend_metric, grouped by team_alias (gateway/teams.yaml). Teams with no traffic yet (evals, loadtest) simply have no line.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 54 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "sum by (team_alias) (rate(litellm_spend_metric_total[$__rate_interval])) * 60",
+          "legendFormat": "{{team_alias}}"
+        }
+      ]
     }
   ]
 }
