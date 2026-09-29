@@ -40,6 +40,82 @@
           "legendFormat": "{{requested_model}}"
         }
       ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Request Latency (p50 / p95), by Requested Model",
+      "description": "litellm_request_total_latency_metric: end-to-end latency for a request to the proxy (auth, pre-call hooks, the LLM API call, post-call processing), split by requested_model.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 9 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.5, sum by (le, requested_model) (rate(litellm_request_total_latency_metric_bucket[$__rate_interval])))",
+          "legendFormat": "p50 {{requested_model}}"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (le, requested_model) (rate(litellm_request_total_latency_metric_bucket[$__rate_interval])))",
+          "legendFormat": "p95 {{requested_model}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Time to First Token (p50 / p95), by Requested Model",
+      "description": "litellm_llm_api_time_to_first_token_metric, split by requested_model. LiteLLM only records this for streaming requests; the copilot API does not stream (A33), so this panel shows No data until something calls the gateway with stream=true.",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 18 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "calcs": ["mean", "max"] },
+        "tooltip": { "mode": "multi" }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.5, sum by (le, requested_model) (rate(litellm_llm_api_time_to_first_token_metric_bucket[$__rate_interval])))",
+          "legendFormat": "p50 {{requested_model}}"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "histogram_quantile(0.95, sum by (le, requested_model) (rate(litellm_llm_api_time_to_first_token_metric_bucket[$__rate_interval])))",
+          "legendFormat": "p95 {{requested_model}}"
+        }
+      ]
     }
   ]
 }
