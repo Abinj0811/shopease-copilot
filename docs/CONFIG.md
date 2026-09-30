@@ -76,6 +76,8 @@ Every configurable value (ports, URLs, keys, model aliases, thresholds, counts, 
 | max_history_turns | Most recent user+assistant exchanges replayed to the model from a conversation | 4 | config/copilot.yaml | 8 |
 | request_timeout_seconds | Seconds one gateway call (chat or embedding) may take before the chat API gives up; scripts/check_fallback.py uses the same budget | 120 | config/copilot.yaml | 300 (slow local model on CPU) |
 | fallback_reply | Reply returned when the tool-calling loop hits max_tool_iterations without a final answer; should offer a human handoff | "Sorry, I could not finish working that out. I can pass you to a human agent who can take it from here. Would you like that?" | config/copilot.yaml | a version in another language |
+| trace_sample_rate | Fraction of copilot requests traced to Phoenix via copilot/tracing.py (1.0 = all) | 1.0 | config/copilot.yaml | 0.1 (sample 10% under load) |
+| PHOENIX_APP_PROJECT_NAME | Phoenix project the copilot app's own spans (tool calls, retrieval) are grouped under; distinct from PHOENIX_PROJECT_NAME, which is the gateway's LLM/embedding-call traces (B10) | shopease-copilot-app | .env | shopease-copilot-dev |
 | COPILOT_GATEWAY_KEY | The `copilot` team's virtual key (from scripts/create_keys.py) that the chat API uses for every gateway call; checked at startup | sk-not-required-yet | .env | a real `sk-...` key |
 | COPILOT_API_HOST | Interface the chat API (`python -m copilot.api`) listens on | 127.0.0.1 | .env | 0.0.0.0 (to reach it from another machine) |
 | COPILOT_API_PORT | Port the chat API listens on | 8001 | .env | 8002 |

@@ -10,3 +10,4 @@ request_timeout_seconds: 120  # how long one gateway call may take before the AP
 fallback_reply: >-          # returned when the tool loop hits max_tool_iterations without a final answer
   Sorry, I could not finish working that out. I can pass you to a human agent
   who can take it from here. Would you like that?
+trace_sample_rate: 1.0      # fraction of copilot requests traced to Phoenix (1.0 = all); lower to cut storage under load

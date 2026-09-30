@@ -46,6 +46,16 @@ class Settings(BaseSettings):
     copilot_api_host: str = "127.0.0.1"
     copilot_api_port: int = Field(default=8001, ge=1, le=65535)
 
+    # Phoenix's OTLP/HTTP collector, reached from the host (the copilot process
+    # runs there, not in Docker); same port docker-compose.yml maps for the
+    # phoenix container (B9). Used by copilot/tracing.py, not the gateway,
+    # which sends its own traces over gRPC from inside the compose network.
+    phoenix_port: int = Field(default=6006, ge=1, le=65535)
+    # Distinct from PHOENIX_PROJECT_NAME (gateway's own project, B10), so the
+    # copilot app's spans don't land in the same Phoenix project as the
+    # gateway's LLM/embedding calls.
+    phoenix_app_project_name: str = "shopease-copilot-app"
+
 
 def load_settings() -> Settings:
     """Load settings, or raise SettingsError naming every missing/invalid variable."""
