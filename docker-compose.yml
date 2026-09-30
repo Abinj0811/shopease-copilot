@@ -38,6 +38,15 @@ services:
       GROQ_API_KEY: ${GROQ_API_KEY}
       LITELLM_DATABASE_URL: ${LITELLM_DATABASE_URL}
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY}
+      LITELLM_OTEL_V2: "true"
+      PHOENIX_COLLECTOR_ENDPOINT: grpc://phoenix:4317
+      PHOENIX_PROJECT_NAME: ${PHOENIX_PROJECT_NAME:-shopease-copilot}
+      # Without this, the OTel gRPC exporter defaults to TLS and every export
+      # fails (SSL_ERROR_SSL: WRONG_VERSION_NUMBER) against Phoenix's plaintext
+      # collector. Standard OTel SDK env var, read directly by
+      # opentelemetry-exporter-otlp-proto-grpc, not litellm-specific.
+      OTEL_EXPORTER_OTLP_TRACES_INSECURE: "true"
+
       # Redis response cache (litellm_settings.cache_params in gateway/config.yaml).
       # The compose service name and its in-container port, not REDIS_HOST/
       # REDIS_PORT from .env: those are the host-side values the scripts use.

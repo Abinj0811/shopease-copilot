@@ -43,8 +43,16 @@ litellm_settings:
   # Prometheus metrics, served by the proxy itself on /metrics (same port as
   # the API, LITELLM_PORT). Not enterprise-gated in this version: request,
   # latency, token, spend and fallback metrics are all in the open-source build.
+  #
+  # arize_phoenix sends per-request LLM traces to the self-hosted Phoenix
+  # collector (B9). It maps to LiteLLM's OpenTelemetry logger and needs three
+  # env vars this file cannot set (confirmed in the installed litellm source,
+  # litellm/integrations/arize/arize_phoenix.py and integrations/otel/model/
+  # config.py): LITELLM_OTEL_V2, PHOENIX_COLLECTOR_ENDPOINT and
+  # PHOENIX_PROJECT_NAME, all on the litellm service in docker-compose.yml.
   callbacks:
     - prometheus
+    - arize_phoenix
   # Since v1.85 /metrics requires a LiteLLM key by default. Kept on (the secure
   # default, stated explicitly like disable_spend_logs below); a scraper must
   # then send `Authorization: Bearer <key>`.
